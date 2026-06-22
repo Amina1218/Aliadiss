@@ -147,7 +147,7 @@ export default function AdminProductsPage() {
                   product.processorType ? ['Processor', product.processorType] : null,
                   product.cameraMp ? ['Camera', `${product.cameraMp} MP`] : null,
                   product.screenSizeIn ? ['Screen', `${product.screenSizeIn}"`] : null,
-                ].filter(Boolean).map(([label, value]) => (
+                ].filter((item): item is [string, string] => Boolean(item)).map(([label, value]) => (
                   <div key={label as string} className="flex justify-between items-center">
                     <span className="text-xs text-gray-400">{label}</span>
                     <span className="text-xs font-semibold text-gray-800">{value}</span>

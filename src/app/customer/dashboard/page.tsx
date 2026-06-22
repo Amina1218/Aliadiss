@@ -8,10 +8,10 @@ export default async function CustomerDashboardPage() {
 
   const [myStore, orderCount, publicProducts] = await Promise.all([
     prisma.store.findUnique({
-      where: { ownerId: session.userId },
+      where: { ownerId: session.sub },
       include: { _count: { select: { products: true, sales: true } } },
     }),
-    prisma.order.count({ where: { customerId: session.userId } }),
+    prisma.order.count({ where: { customerId: session.sub } }),
     prisma.product.findMany({
       where: { status: "VERIFIED", store: { status: "APPROVED" } },
       include: { store: { select: { name: true } } },

@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const store = await prisma.store.findUnique({ where: { ownerId: session.userId } });
+  const store = await prisma.store.findUnique({ where: { ownerId: session.sub } });
   if (!store || store.status !== "APPROVED") {
     return NextResponse.json({ error: "Your store must be approved first" }, { status: 403 });
   }
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const {
     title, description, category, condition, priceBirr,
-    warrantyType, warrantyMonths, imageEmoji,
+    warrantyType, warrantyMonths, imageUrl,
     screenSizeIn, screenResolution, cameraMp, ramGb, processorType, batteryMah,
   } = body;
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       priceBirr: Number(priceBirr),
       warrantyType: warrantyType || "NONE",
       warrantyMonths: Number(warrantyMonths) || 0,
-      imageEmoji: imageEmoji || "📦",
+      imageUrl: imageUrl || null,
       screenSizeIn, screenResolution, cameraMp, ramGb, processorType, batteryMah,
       storeId: store.id,
       status: "PENDING",

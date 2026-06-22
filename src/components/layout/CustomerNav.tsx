@@ -1,17 +1,19 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { ShoppingCart, Package, LogOut, User, Search, Bell } from 'lucide-react'
+import { ShoppingCart, Package, LogOut } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { SearchBar } from '@/components/shop/SearchBar'
+import { useCart } from '@/components/shop/CartProvider'
 
 interface CustomerNavProps {
   user: { name: string; email: string; role: string }
-  cartCount?: number
 }
 
-export function CustomerNav({ user, cartCount = 0 }: CustomerNavProps) {
+export function CustomerNav({ user }: CustomerNavProps) {
+  const { count: cartCount } = useCart()
   const pathname = usePathname()
   const router = useRouter()
 
@@ -36,24 +38,10 @@ export function CustomerNav({ user, cartCount = 0 }: CustomerNavProps) {
         <div className="flex items-center h-16 gap-6">
           <Logo size="sm" />
 
-          {/* Search */}
-          <div className="flex-1 max-w-xl hidden md:block">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search phones, laptops, accessories..."
-                className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent focus:bg-white transition-all"
-              />
-            </div>
-          </div>
+          <SearchBar />
 
           {/* Right actions */}
           <div className="flex items-center gap-2 ml-auto">
-            <button className="btn-ghost p-2.5 relative">
-              <Bell className="w-5 h-5" />
-            </button>
-
             <Link href="/shop/cart" className="btn-ghost p-2.5 relative">
               <ShoppingCart className="w-5 h-5" />
               {cartCount > 0 && (
@@ -67,7 +55,7 @@ export function CustomerNav({ user, cartCount = 0 }: CustomerNavProps) {
             <div className="flex items-center gap-2 pl-2 border-l border-gray-100">
               <div className="hidden sm:block text-right">
                 <p className="text-sm font-medium text-gray-900 leading-none">{user.name}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Customer</p>
+                <p className="text-xs text-gray-400 mt-0.5 capitalize">{user.role.replace('_', ' ').toLowerCase()}</p>
               </div>
               <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-sm">
                 {user.name.charAt(0)}

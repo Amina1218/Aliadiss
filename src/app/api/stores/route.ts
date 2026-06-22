@@ -7,7 +7,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const store = await prisma.store.findUnique({
-    where: { ownerId: session.userId },
+    where: { ownerId: session.sub },
     include: {
       products: { orderBy: { createdAt: "desc" } },
       _count: { select: { sales: true } },
@@ -22,23 +22,24 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { name, description, legalName, city, credentialsNote } = body;
+  const { name, description, legalName, city, credentialsNote, legalCredentials } = body;
+  const credentials = legalCredentials || credentialsNote;
 
-  if (!name || !legalName || !city || !credentialsNote) {
+  if (!name || !legalName || !city || !credentials) {
     return NextResponse.json({ error: "All fields required" }, { status: 400 });
   }
 
-  const existing = await prisma.store.findUnique({ where: { ownerId: session.userId } });
+  const existing = await prisma.store.findUnique({ where: { ownerId: session.sub } });
   if (existing) {
     const updated = await prisma.store.update({
       where: { id: existing.id },
-      data: { name, description, legalName, city, credentialsNote, status: "PENDING" },
+      data: { name, description, legalName, city, legalCredentials: credentials, status: "PENDING" },
     });
     return NextResponse.json(updated);
   }
 
   const store = await prisma.store.create({
-    data: { name, description, legalName, city, credentialsNote, ownerId: session.userId },
+    data: { name, description, legalName, city, legalCredentials: credentials, ownerId: session.sub },
   });
 
   return NextResponse.json(store);

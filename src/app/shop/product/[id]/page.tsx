@@ -2,8 +2,9 @@ import { prisma } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
-import { ShieldCheck, ArrowLeft, Store, MapPin, ShoppingCart, Zap } from 'lucide-react'
+import { ShieldCheck, Store, MapPin } from 'lucide-react'
 import { formatBirr, WARRANTY_LABELS, CATEGORY_EMOJI } from '@/lib/utils'
+import { ProductActions } from '@/components/shop/ProductActions'
 
 interface PageProps { params: { id: string } }
 
@@ -16,9 +17,9 @@ async function getProduct(id: string) {
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const product = await getProduct(params.id)
-  if (!product || product.status !== 'VERIFIED') notFound()
+  if (!product || product.status !== 'VERIFIED' || product.store.status !== 'APPROVED') notFound()
 
-  const commissionBirr = Math.round(product.priceBirr * 0.05)
+  const commissionBirr = Math.round(product.priceBirr * product.store.commissionRate * 100) / 100
   const emoji = CATEGORY_EMOJI[product.category] ?? '📦'
 
   const specs = [
@@ -94,7 +95,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               <p className="text-xs text-gray-400 uppercase tracking-widest font-medium mb-1">Price</p>
               <p className="font-display text-3xl font-bold text-gray-900">{formatBirr(product.priceBirr)}</p>
               <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
-                <span className="text-orange-500 font-medium">5% commission</span>
+                <span className="text-orange-500 font-medium">{Math.round(product.store.commissionRate * 100)}% commission</span>
                 ({formatBirr(commissionBirr)}) goes to Ali Addis
               </p>
             </div>
@@ -113,16 +114,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               </span>
             </div>
 
-            <div className="space-y-2.5">
-              <button className="btn-primary w-full h-11 text-sm" disabled={product.stock === 0}>
-                <ShoppingCart className="w-4 h-4" />
-                {product.stock === 0 ? 'Out of stock' : 'Add to cart'}
-              </button>
-              <button className="btn-secondary w-full h-11 text-sm" disabled={product.stock === 0}>
-                <Zap className="w-4 h-4" />
-                Buy now
-              </button>
-            </div>
+            <ProductActions productId={product.id} inStock={product.stock > 0} />
 
             {/* Trust badges */}
             <div className="mt-5 pt-5 border-t border-gray-50 space-y-2.5">

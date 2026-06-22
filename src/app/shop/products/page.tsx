@@ -1,8 +1,10 @@
 import { prisma } from '@/lib/db'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { Badge } from '@/components/ui/Badge'
-import { ShieldCheck, SlidersHorizontal, ArrowRight } from 'lucide-react'
+import { ShieldCheck, ArrowRight } from 'lucide-react'
 import { formatBirr, WARRANTY_LABELS, CATEGORY_EMOJI } from '@/lib/utils'
+import { SortSelect } from '@/components/shop/SortSelect'
 
 interface PageProps {
   searchParams: { category?: string; q?: string; featured?: string; sort?: string }
@@ -47,19 +49,18 @@ export default async function ProductsPage({ searchParams }: PageProps) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-xl font-bold text-gray-900">
-            {activeCategory !== 'ALL' ? CATEGORIES.find(c => c.value === activeCategory)?.label : 'All Products'}
+            {searchParams.q
+              ? `Results for "${searchParams.q}"`
+              : activeCategory !== 'ALL'
+                ? CATEGORIES.find(c => c.value === activeCategory)?.label
+                : 'All Products'}
           </h1>
           <p className="text-sm text-gray-400 mt-0.5">{products.length} verified product{products.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            defaultValue={activeSort}
-            className="text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 text-gray-700"
-          >
-            <option value="newest">Newest first</option>
-            <option value="price_asc">Price: Low → High</option>
-            <option value="price_desc">Price: High → Low</option>
-          </select>
+          <Suspense fallback={null}>
+            <SortSelect />
+          </Suspense>
         </div>
       </div>
 

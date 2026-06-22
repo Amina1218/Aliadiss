@@ -1,12 +1,12 @@
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import Link from 'next/link'
-import { Badge } from '@/components/ui/Badge'
 import { ShieldCheck, Star, Package, ArrowRight, Zap, TrendingUp } from 'lucide-react'
-import { formatBirr, WARRANTY_LABELS, CATEGORY_EMOJI } from '@/lib/utils'
+import { CATEGORY_EMOJI } from '@/lib/utils'
+import { ShopProductCard } from '@/components/shop/ShopProductCard'
 
 async function getShopData() {
-  const [featured, categories, recentProducts] = await Promise.all([
+  const [featured, categories, recentProducts, storeCount, productCount] = await Promise.all([
     prisma.product.findMany({
       where: { status: 'VERIFIED', store: { status: 'APPROVED' }, featured: true },
       include: { store: { select: { id: true, name: true, city: true } } },
@@ -24,13 +24,15 @@ async function getShopData() {
       take: 8,
       orderBy: { createdAt: 'desc' },
     }),
+    prisma.store.count({ where: { status: 'APPROVED' } }),
+    prisma.product.count({ where: { status: 'VERIFIED', store: { status: 'APPROVED' } } }),
   ])
-  return { featured, categories, recentProducts }
+  return { featured, categories, recentProducts, storeCount, productCount }
 }
 
 export default async function ShopPage() {
   const session = await getSession()
-  const { featured, categories, recentProducts } = await getShopData()
+  const { featured, categories, recentProducts, storeCount, productCount } = await getShopData()
 
   return (
     <div className="space-y-10 animate-fade-in">
@@ -66,8 +68,8 @@ export default async function ShopPage() {
           <div className="flex flex-col gap-3 min-w-[160px]">
             {[
               { icon: ShieldCheck, value: '100%', label: 'Verified sellers' },
-              { icon: Package, value: recentProducts.length + '+', label: 'Products live' },
-              { icon: Star, value: '4.9', label: 'Avg. seller rating' },
+              { icon: Package, value: `${productCount}+`, label: 'Products live' },
+              { icon: Star, value: String(storeCount), label: 'Active stores' },
             ].map(s => (
               <div key={s.label} className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-2.5 border border-white/8">
                 <s.icon className="w-4 h-4 text-orange-400" />
@@ -123,7 +125,7 @@ export default async function ShopPage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {featured.map(product => <ProductCard key={product.id} product={product} />)}
+            {featured.map(product => <ShopProductCard key={product.id} product={product} />)}
           </div>
         </section>
       )}
@@ -140,53 +142,9 @@ export default async function ShopPage() {
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {recentProducts.slice(0, 8).map(product => <ProductCard key={product.id} product={product} />)}
+          {recentProducts.slice(0, 8).map(product => <ShopProductCard key={product.id} product={product} />)}
         </div>
       </section>
     </div>
-  )
-}
-
-function ProductCard({ product }: { product: any }) {
-  const warrantyVariant = product.warrantyType === 'OFFICIAL' ? 'blue' : product.warrantyType === 'SELLER' ? 'orange' : 'gray'
-  const warrantyLabel = WARRANTY_LABELS[product.warrantyType as keyof typeof WARRANTY_LABELS]
-
-  return (
-    <Link href={`/shop/product/${product.id}`} className="card overflow-hidden hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 group">
-      {/* Product image / emoji */}
-      <div className="h-44 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-        <span className="text-5xl">{CATEGORY_EMOJI[product.category as keyof typeof CATEGORY_EMOJI] ?? '📦'}</span>
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-          <Badge variant="verified"><ShieldCheck className="w-3 h-3" /> Verified</Badge>
-          <Badge variant={warrantyVariant}>{warrantyLabel}</Badge>
-        </div>
-        {product.condition === 'New' && (
-          <div className="absolute top-3 right-3">
-            <Badge variant="orange">New</Badge>
-          </div>
-        )}
-      </div>
-
-      <div className="p-4">
-        <p className="text-xs text-gray-400 mb-1">{product.store.name} · {product.store.city}</p>
-        <h3 className="font-semibold text-gray-900 text-sm leading-snug group-hover:text-orange-600 transition-colors line-clamp-2">
-          {product.title}
-        </h3>
-
-        {/* Key specs */}
-        <div className="flex flex-wrap gap-1.5 mt-2.5">
-          {product.ramGb && <span className="text-[10px] px-2 py-0.5 rounded-md bg-gray-50 text-gray-500 font-medium">{product.ramGb}GB RAM</span>}
-          {product.batteryMah && <span className="text-[10px] px-2 py-0.5 rounded-md bg-gray-50 text-gray-500 font-medium">{product.batteryMah}mAh</span>}
-          {product.storageGb && <span className="text-[10px] px-2 py-0.5 rounded-md bg-gray-50 text-gray-500 font-medium">{product.storageGb}GB</span>}
-        </div>
-
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-          <p className="font-display text-base font-bold text-gray-900">{formatBirr(product.priceBirr)}</p>
-          <button className="text-xs font-semibold text-orange-500 hover:text-orange-600 flex items-center gap-1">
-            Add to cart
-          </button>
-        </div>
-      </div>
-    </Link>
   )
 }
