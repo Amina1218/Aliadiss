@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { formatBirr, CATEGORY_EMOJI } from '@/lib/utils'
+import { formatBirr } from '@/lib/utils'
+import { ProductImage } from '@/components/shop/ProductImage'
 import { useCart } from '@/components/shop/CartProvider'
 
 interface CartLine {
@@ -17,6 +18,7 @@ interface CartLine {
     priceBirr: number
     stock: number
     category: string
+    imageUrl?: string | null
     store: { name: string; city: string }
   }
 }
@@ -116,8 +118,8 @@ export default function CartPage() {
 
         {items.map((item) => (
           <div key={item.productId} className="card p-4 flex gap-4">
-            <div className="w-20 h-20 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
-              <span className="text-3xl">{CATEGORY_EMOJI[item.product.category] ?? '📦'}</span>
+            <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+              <ProductImage src={item.product.imageUrl} category={item.product.category} alt={item.product.title} emojiClassName="text-3xl" />
             </div>
             <div className="flex-1 min-w-0">
               <Link href={`/shop/product/${item.product.id}`} className="font-semibold text-gray-900 hover:text-orange-600 line-clamp-2">

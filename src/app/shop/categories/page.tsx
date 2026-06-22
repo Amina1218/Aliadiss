@@ -2,11 +2,12 @@ import { prisma } from '@/lib/db'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { CATEGORY_EMOJI, CATEGORY_LABELS } from '@/lib/utils'
+import { publishedProductWhere } from '@/lib/products'
 
 async function getCategories() {
   const counts = await prisma.product.groupBy({
     by: ['category'],
-    where: { status: 'VERIFIED', store: { status: 'APPROVED' } },
+    where: publishedProductWhere,
     _count: { category: true },
   })
 

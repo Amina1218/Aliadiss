@@ -113,16 +113,22 @@ model Product {
 }
 
 model Order {
-  id         String      @id @default(cuid())
-  status     OrderStatus @default(PENDING)
-  totalBirr  Float
-  notes      String?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  customerId String
-  customer   User        @relation(fields: [customerId], references: [id])
-  items      OrderItem[]
-  sales      Sale[]
+  id              String      @id @default(cuid())
+  status          OrderStatus @default(PENDING)
+  totalBirr       Float
+  notes           String?
+  deliveryName    String?
+  deliveryPhone   String?
+  deliveryCity    String?
+  deliveryAddress String?
+  deliveryMethod  String      @default("STANDARD")
+  deliveryFee     Float       @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  customerId      String
+  customer        User        @relation(fields: [customerId], references: [id])
+  items           OrderItem[]
+  sales           Sale[]
   @@map("orders")
 }
 

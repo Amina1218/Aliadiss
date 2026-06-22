@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-
+import { publishedProductWhere } from '@/lib/products'
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const category = searchParams.get('category')
@@ -10,8 +10,7 @@ export async function GET(req: NextRequest) {
 
   const products = await prisma.product.findMany({
     where: {
-      status: 'VERIFIED',
-      store: { status: 'APPROVED' },
+      ...publishedProductWhere,
       ...(category && category !== 'ALL' ? { category: category as any } : {}),
       ...(q ? { OR: [{ title: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] } : {}),
       ...(featured === 'true' ? { featured: true } : {}),

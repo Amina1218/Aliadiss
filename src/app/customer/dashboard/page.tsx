@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { CATEGORY_EMOJI } from "@/lib/utils";
 import Link from "next/link";
 
 export default async function CustomerDashboardPage() {
@@ -276,7 +277,7 @@ export default async function CustomerDashboardPage() {
                   fontSize: 40,
                 }}
               >
-                {p.imageEmoji}
+                {CATEGORY_EMOJI[p.category] ?? '📦'}
               </div>
               <div style={{ padding: "12px 14px" }}>
                 <div

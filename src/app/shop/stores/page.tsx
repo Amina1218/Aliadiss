@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
 import { MapPin, Package, ShieldCheck, Store } from 'lucide-react'
+import { publishedProductWhere } from '@/lib/products'
 
 async function getStores() {
   return prisma.store.findMany({
@@ -10,7 +11,7 @@ async function getStores() {
       owner: { select: { name: true } },
       _count: {
         select: {
-          products: { where: { status: 'VERIFIED' } },
+          products: { where: publishedProductWhere },
         },
       },
     },
@@ -25,8 +26,8 @@ export default async function StoresPage() {
     <div className="animate-fade-in space-y-6">
       <div>
         <h1 className="font-display text-xl font-bold text-gray-900">Verified stores</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          {stores.length} admin-approved seller{stores.length !== 1 ? 's' : ''} on Ali Addis
+        <p className="text-sm text-gray-500 mt-1 max-w-lg">
+          Browse shops run by admin-approved sellers. Each store lists only in-stock products that passed our review.
         </p>
       </div>
 

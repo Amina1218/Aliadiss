@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
 import { ArrowLeft, MapPin, ShieldCheck, Store } from 'lucide-react'
 import { ShopProductCard } from '@/components/shop/ShopProductCard'
+import { publishedProductWhere } from '@/lib/products'
 
 interface PageProps {
   params: { id: string }
@@ -15,7 +16,7 @@ async function getStore(id: string) {
     include: {
       owner: { select: { name: true } },
       products: {
-        where: { status: 'VERIFIED' },
+        where: publishedProductWhere,
         include: { store: { select: { id: true, name: true, city: true } } },
         orderBy: { createdAt: 'desc' },
       },

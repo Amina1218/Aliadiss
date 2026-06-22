@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
 import { ShieldCheck, Store, MapPin } from 'lucide-react'
-import { formatBirr, WARRANTY_LABELS, CATEGORY_EMOJI } from '@/lib/utils'
+import { formatBirr, WARRANTY_LABELS } from '@/lib/utils'
 import { ProductActions } from '@/components/shop/ProductActions'
+import { ProductImage } from '@/components/shop/ProductImage'
 
 interface PageProps { params: { id: string } }
 
@@ -17,10 +18,9 @@ async function getProduct(id: string) {
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const product = await getProduct(params.id)
-  if (!product || product.status !== 'VERIFIED' || product.store.status !== 'APPROVED') notFound()
+  if (!product || product.status !== 'VERIFIED' || product.store.status !== 'APPROVED' || product.stock < 1) notFound()
 
   const commissionBirr = Math.round(product.priceBirr * product.store.commissionRate * 100) / 100
-  const emoji = CATEGORY_EMOJI[product.category] ?? '📦'
 
   const specs = [
     product.screenSizeIn ? ['Screen size', `${product.screenSizeIn}"`] : null,
@@ -30,7 +30,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
     product.storageGb ? ['Storage', `${product.storageGb} GB`] : null,
     product.processorType ? ['Processor', product.processorType] : null,
     product.batteryMah ? ['Battery', `${product.batteryMah} mAh`] : null,
-    ['Condition', product.condition],
     ['Category', product.category],
   ].filter(Boolean) as [string, string][]
 
@@ -50,8 +49,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <div className="lg:col-span-2 space-y-5">
           {/* Product image */}
           <div className="card overflow-hidden">
-            <div className="h-72 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-              <span className="text-8xl">{emoji}</span>
+            <div className="h-72 md:h-80 relative">
+              <ProductImage src={product.imageUrl} category={product.category} alt={product.title} emojiClassName="text-8xl" />
               <div className="absolute top-4 left-4 flex flex-col gap-2">
                 <Badge variant="verified"><ShieldCheck className="w-3.5 h-3.5" /> Admin Verified</Badge>
                 <Badge variant={product.warrantyType === 'OFFICIAL' ? 'blue' : product.warrantyType === 'SELLER' ? 'orange' : 'gray'}>
@@ -59,16 +58,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   {product.warrantyMonths > 0 && ` · ${product.warrantyMonths} months`}
                 </Badge>
               </div>
-              {product.condition === 'New' && (
-                <div className="absolute top-4 right-4"><Badge variant="orange">New</Badge></div>
-              )}
             </div>
           </div>
 
           {/* Title & description */}
           <div className="card p-6">
             <h1 className="font-display text-2xl font-bold text-gray-900">{product.title}</h1>
-            <p className="text-gray-500 mt-3 leading-relaxed">{product.description}</p>
+            <p className="text-xs text-gray-400 mt-2 uppercase tracking-wide font-medium">Seller description</p>
+            <p className="text-gray-600 mt-2 leading-relaxed">{product.description}</p>
           </div>
 
           {/* Specs table */}

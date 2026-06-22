@@ -22,3 +22,15 @@ export async function PATCH(req: NextRequest) {
   const product = await prisma.product.update({ where: { id: productId }, data: { status, rejectionReason } })
   return NextResponse.json(product)
 }
+
+export async function DELETE(req: NextRequest) {
+  const session = await getSession()
+  if (!session || session.role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { searchParams } = new URL(req.url)
+  const productId = searchParams.get('productId')
+  if (!productId) return NextResponse.json({ error: 'productId is required' }, { status: 400 })
+
+  await prisma.product.delete({ where: { id: productId } })
+  return NextResponse.json({ ok: true })
+}

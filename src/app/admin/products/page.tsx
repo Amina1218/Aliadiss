@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
-import { Package, CheckCircle, XCircle, Clock, RefreshCw, ShieldCheck } from 'lucide-react'
+import { Package, CheckCircle, XCircle, Clock, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react'
 import { formatBirr, formatDate, CATEGORY_EMOJI, WARRANTY_LABELS } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
@@ -31,6 +31,23 @@ export default function AdminProductsPage() {
   }
 
   useEffect(() => { fetchProducts() }, [filter])
+
+  const removeProduct = async (productId: string, title: string) => {
+    if (!confirm(`Permanently remove "${title}" from the site?`)) return
+    setActionLoading(productId)
+    try {
+      const res = await fetch(`/api/admin/products?productId=${productId}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('Product removed')
+        fetchProducts()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Failed to remove')
+      }
+    } finally {
+      setActionLoading(null)
+    }
+  }
 
   const updateStatus = async (productId: string, status: 'VERIFIED' | 'REJECTED', reason?: string) => {
     setActionLoading(productId)
@@ -127,8 +144,8 @@ export default function AdminProductsPage() {
                   <p className="text-xs text-gray-400 mt-1">{product.store.name} · Submitted {formatDate(product.createdAt)}</p>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {warrantyBadge(product.warrantyType, product.warrantyMonths)}
-                    <Badge variant="gray">{product.condition}</Badge>
                     <Badge variant="gray">{product.category}</Badge>
+                    {product.stock === 0 && <Badge variant="rejected">Out of stock</Badge>}
                   </div>
                 </div>
               </div>
@@ -186,23 +203,30 @@ export default function AdminProductsPage() {
               )}
 
               {/* Actions */}
-              {product.status === 'PENDING' && rejectingId !== product.id && (
-                <div className="flex gap-2 pt-1 border-t border-gray-50">
-                  <button onClick={() => updateStatus(product.id, 'VERIFIED')} disabled={actionLoading === product.id} className="btn-primary text-xs py-1.5 px-3 flex-1 gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Verify & publish
-                  </button>
-                  <button onClick={() => setRejectingId(product.id)} className="btn-danger text-xs py-1.5 px-3 gap-1.5">
-                    <XCircle className="w-3.5 h-3.5" /> Reject
-                  </button>
-                </div>
-              )}
-              {product.status === 'REJECTED' && rejectingId !== product.id && (
-                <div className="flex gap-2 pt-1 border-t border-gray-50">
+              <div className="flex gap-2 pt-1 border-t border-gray-50 flex-wrap">
+                {product.status === 'PENDING' && rejectingId !== product.id && (
+                  <>
+                    <button onClick={() => updateStatus(product.id, 'VERIFIED')} disabled={actionLoading === product.id} className="btn-primary text-xs py-1.5 px-3 flex-1 gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Verify & publish
+                    </button>
+                    <button onClick={() => setRejectingId(product.id)} className="btn-danger text-xs py-1.5 px-3 gap-1.5">
+                      <XCircle className="w-3.5 h-3.5" /> Reject
+                    </button>
+                  </>
+                )}
+                {product.status === 'REJECTED' && rejectingId !== product.id && (
                   <button onClick={() => updateStatus(product.id, 'VERIFIED')} disabled={actionLoading === product.id} className="btn-secondary text-xs py-1.5 px-3 gap-1.5">
                     <CheckCircle className="w-3.5 h-3.5" /> Re-verify
                   </button>
-                </div>
-              )}
+                )}
+                <button
+                  onClick={() => removeProduct(product.id, product.title)}
+                  disabled={actionLoading === product.id}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 ml-auto"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Remove
+                </button>
+              </div>
             </div>
           ))}
         </div>

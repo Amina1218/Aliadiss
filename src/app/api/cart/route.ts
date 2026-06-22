@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { publishedProductWhere } from '@/lib/products'
 import {
   CART_COOKIE,
   CART_COOKIE_OPTIONS,
@@ -28,8 +29,7 @@ async function enrichCart(cart: Cart) {
   const products = await prisma.product.findMany({
     where: {
       id: { in: cart.items.map((i) => i.productId) },
-      status: 'VERIFIED',
-      store: { status: 'APPROVED' },
+      ...publishedProductWhere,
     },
     include: { store: { select: { id: true, name: true, city: true } } },
   })
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
   }
 
   const product = await prisma.product.findFirst({
-    where: { id: productId, status: 'VERIFIED', store: { status: 'APPROVED' } },
+    where: { id: productId, ...publishedProductWhere },
   })
   if (!product) return NextResponse.json({ error: 'Product not available' }, { status: 404 })
   if (product.stock < 1) return NextResponse.json({ error: 'Out of stock' }, { status: 400 })
@@ -120,7 +120,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const product = await prisma.product.findFirst({
-    where: { id: productId, status: 'VERIFIED', store: { status: 'APPROVED' } },
+    where: { id: productId, ...publishedProductWhere },
   })
   if (!product) return NextResponse.json({ error: 'Product not available' }, { status: 404 })
   if (qty > product.stock) {

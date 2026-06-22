@@ -10,6 +10,8 @@ interface PageProps {
   searchParams: { category?: string; q?: string; featured?: string; sort?: string }
 }
 
+import { publishedProductWhere } from '@/lib/products'
+
 async function getProducts(params: PageProps['searchParams']) {
   const { category, q, featured, sort } = params
   const orderBy: any =
@@ -19,8 +21,7 @@ async function getProducts(params: PageProps['searchParams']) {
 
   return prisma.product.findMany({
     where: {
-      status: 'VERIFIED',
-      store: { status: 'APPROVED' },
+      ...publishedProductWhere,
       ...(category && category !== 'ALL' ? { category: category as any } : {}),
       ...(q ? { OR: [{ title: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] } : {}),
       ...(featured === 'true' ? { featured: true } : {}),
@@ -55,7 +56,10 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                 ? CATEGORIES.find(c => c.value === activeCategory)?.label
                 : 'All Products'}
           </h1>
-          <p className="text-sm text-gray-400 mt-0.5">{products.length} verified product{products.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-gray-500 mt-1 max-w-lg">
+            Every listing is admin-verified and in stock. Condition and item details are in each seller&apos;s description.
+          </p>
+          <p className="text-sm text-gray-400 mt-0.5">{products.length} product{products.length !== 1 ? 's' : ''} available</p>
         </div>
         <div className="flex items-center gap-2">
           <Suspense fallback={null}>
@@ -152,9 +156,6 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                         {WARRANTY_LABELS[product.warrantyType as keyof typeof WARRANTY_LABELS]}
                       </Badge>
                     </div>
-                    {product.condition === 'New' && (
-                      <div className="absolute top-3 right-3"><Badge variant="orange">New</Badge></div>
-                    )}
                   </div>
                   <div className="p-4">
                     <p className="text-xs text-gray-400 mb-1">{product.store.name}</p>

@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { ShoppingCart, Package, LogOut } from 'lucide-react'
+import { ShoppingCart, Package, LogOut, Store } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -87,6 +87,12 @@ export function CustomerNav({ user }: CustomerNavProps) {
             <Package className="w-3.5 h-3.5" />
             My Orders
           </Link>
+          {user.role === 'STORE_OWNER' && (
+            <Link href="/seller/dashboard" className={cn('px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5', pathname.startsWith('/seller') ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50')}>
+              <Store className="w-3.5 h-3.5" />
+              Seller Dashboard
+            </Link>
+          )}
         </nav>
       </div>
     </header>

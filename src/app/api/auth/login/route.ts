@@ -17,7 +17,12 @@ export async function POST(req: NextRequest) {
     const valid = await bcrypt.compare(password, user.passwordHash)
     if (!valid) return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     const token = await signToken({ sub: user.id, email: user.email, name: user.name, role: user.role, storeId: user.store?.id })
-    const redirectUrl = user.role === 'SUPER_ADMIN' ? '/admin/dashboard' : '/shop'
+    const redirectUrl =
+      user.role === 'SUPER_ADMIN'
+        ? '/admin/dashboard'
+        : user.role === 'STORE_OWNER'
+          ? '/seller/dashboard'
+          : '/shop'
     const res = NextResponse.json({ ok: true, redirectUrl, role: user.role })
     res.cookies.set(COOKIE_NAME, token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 60 * 60 * 24 * 7, path: '/' })
     return res

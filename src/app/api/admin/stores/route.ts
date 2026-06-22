@@ -19,6 +19,19 @@ export async function PATCH(req: NextRequest) {
   const session = await getSession()
   if (!session || session.role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { storeId, status, rejectionReason } = await req.json()
-  const store = await prisma.store.update({ where: { id: storeId }, data: { status, rejectionReason } })
+
+  const store = await prisma.store.update({
+    where: { id: storeId },
+    data: { status, rejectionReason },
+    include: { owner: { select: { id: true } } },
+  })
+
+  if (status === 'APPROVED') {
+    await prisma.user.update({
+      where: { id: store.owner.id },
+      data: { role: 'STORE_OWNER' },
+    })
+  }
+
   return NextResponse.json(store)
 }

@@ -3,8 +3,9 @@ import { getSession } from '@/lib/auth'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
-import { ArrowLeft } from 'lucide-react'
-import { formatBirr, formatDate, CATEGORY_EMOJI } from '@/lib/utils'
+import { ArrowLeft, Truck, MapPin, Phone, User, CheckCircle, Package, Clock } from 'lucide-react'
+import { formatBirr, formatDate } from '@/lib/utils'
+import { ProductImage } from '@/components/shop/ProductImage'
 
 interface PageProps {
   params: { id: string }
@@ -30,7 +31,21 @@ async function getOrder(id: string, userId: string) {
 function statusVariant(status: string) {
   if (status === 'DELIVERED') return 'verified'
   if (status === 'CANCELLED') return 'rejected'
+  if (status === 'SHIPPED') return 'blue'
   return 'pending'
+}
+
+const DELIVERY_STEPS = [
+  { key: 'CONFIRMED', label: 'Order confirmed', icon: CheckCircle },
+  { key: 'SHIPPED', label: 'Shipped', icon: Truck },
+  { key: 'DELIVERED', label: 'Delivered', icon: Package },
+]
+
+function stepIndex(status: string) {
+  if (status === 'DELIVERED') return 2
+  if (status === 'SHIPPED') return 1
+  if (status === 'CONFIRMED' || status === 'PENDING') return 0
+  return -1
 }
 
 export default async function OrderDetailPage({ params }: PageProps) {
@@ -40,9 +55,12 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const order = await getOrder(params.id, session.sub)
   if (!order) notFound()
 
+  const currentStep = stepIndex(order.status)
+  const cancelled = order.status === 'CANCELLED'
+
   return (
     <div className="animate-fade-in space-y-6">
-      <Link href="/shop/orders" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600">
+      <Link href="/shop/orders" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-orange-500 transition-colors">
         <ArrowLeft className="w-4 h-4" />
         Back to orders
       </Link>
@@ -56,13 +74,48 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </div>
           <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
         </div>
-        {order.notes && (
-          <div className="mt-4 p-3 bg-gray-50 rounded-xl text-sm text-gray-600">
-            <span className="font-medium text-gray-700">Notes: </span>
-            {order.notes}
-          </div>
-        )}
       </div>
+
+      {!cancelled && (
+        <div className="card p-6">
+          <h2 className="font-display text-sm font-bold text-gray-900 mb-5 flex items-center gap-2">
+            <Truck className="w-4 h-4 text-orange-500" /> Delivery tracking
+          </h2>
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:justify-between">
+            {DELIVERY_STEPS.map((step, i) => {
+              const done = i <= currentStep
+              const active = i === currentStep
+              const Icon = step.icon
+              return (
+                <div key={step.key} className="flex sm:flex-col items-center gap-3 sm:gap-2 flex-1">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${done ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-400'} ${active ? 'ring-4 ring-orange-100' : ''}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <p className={`text-sm font-medium ${done ? 'text-gray-900' : 'text-gray-400'}`}>{step.label}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {order.deliveryAddress && (
+        <div className="card p-5">
+          <h2 className="font-display text-sm font-bold text-gray-900 mb-3">Delivery address</h2>
+          <div className="space-y-2 text-sm text-gray-600">
+            <p className="flex items-center gap-2"><User className="w-4 h-4 text-orange-500" /> {order.deliveryName}</p>
+            <p className="flex items-center gap-2"><Phone className="w-4 h-4 text-orange-500" /> {order.deliveryPhone}</p>
+            <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-orange-500" /> {order.deliveryAddress}, {order.deliveryCity}</p>
+            <p className="flex items-center gap-2"><Clock className="w-4 h-4 text-orange-500" /> {order.deliveryMethod} delivery{order.deliveryFee > 0 ? ` · ${formatBirr(order.deliveryFee)}` : ''}</p>
+          </div>
+        </div>
+      )}
+
+      {order.notes && (
+        <div className="card p-4 text-sm text-gray-600">
+          <span className="font-medium text-gray-700">Notes: </span>{order.notes}
+        </div>
+      )}
 
       <div className="card overflow-hidden">
         <div className="p-5 border-b border-gray-50">
@@ -71,8 +124,8 @@ export default async function OrderDetailPage({ params }: PageProps) {
         <div className="divide-y divide-gray-50">
           {order.items.map((item) => (
             <div key={item.id} className="p-5 flex gap-4">
-              <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center">
-                <span className="text-2xl">{CATEGORY_EMOJI[item.product.category] ?? '📦'}</span>
+              <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+                <ProductImage src={item.product.imageUrl} category={item.product.category} alt={item.product.title} />
               </div>
               <div className="flex-1 min-w-0">
                 <Link href={`/shop/product/${item.product.id}`} className="font-medium text-gray-900 hover:text-orange-600">
@@ -82,8 +135,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   Sold by{' '}
                   <Link href={`/shop/stores/${item.product.store.id}`} className="text-orange-500 hover:text-orange-600">
                     {item.product.store.name}
-                  </Link>{' '}
-                  · {item.product.store.city}
+                  </Link>
                 </p>
                 <p className="text-sm text-gray-600 mt-2">
                   {item.qty} × {formatBirr(item.unitPrice)}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { publishedProductWhere } from '@/lib/products'
 import {
   CART_COOKIE,
   CART_COOKIE_OPTIONS,
@@ -40,12 +41,24 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}))
   const notes = typeof body.notes === 'string' ? body.notes.trim() || undefined : undefined
+  const {
+    deliveryName,
+    deliveryPhone,
+    deliveryCity,
+    deliveryAddress,
+    deliveryMethod = 'STANDARD',
+  } = body
+
+  if (!deliveryName?.trim() || !deliveryPhone?.trim() || !deliveryCity?.trim() || !deliveryAddress?.trim()) {
+    return NextResponse.json({ error: 'Complete delivery address is required' }, { status: 400 })
+  }
+
+  const deliveryFee = deliveryMethod === 'EXPRESS' ? 150 : 0
 
   const products = await prisma.product.findMany({
     where: {
       id: { in: cart.items.map((i) => i.productId) },
-      status: 'VERIFIED',
-      store: { status: 'APPROVED' },
+      ...publishedProductWhere,
     },
     include: { store: true },
   })
@@ -66,7 +79,8 @@ export async function POST(req: NextRequest) {
     lineItems.push({ product, qty: item.qty })
   }
 
-  const totalBirr = lineItems.reduce((sum, { product, qty }) => sum + product.priceBirr * qty, 0)
+  const totalBirr =
+    lineItems.reduce((sum, { product, qty }) => sum + product.priceBirr * qty, 0) + deliveryFee
 
   const order = await prisma.$transaction(async (tx) => {
     const created = await tx.order.create({
@@ -74,6 +88,12 @@ export async function POST(req: NextRequest) {
         customerId: session.sub,
         totalBirr,
         notes,
+        deliveryName: deliveryName.trim(),
+        deliveryPhone: deliveryPhone.trim(),
+        deliveryCity: deliveryCity.trim(),
+        deliveryAddress: deliveryAddress.trim(),
+        deliveryMethod,
+        deliveryFee,
         status: 'CONFIRMED',
         items: {
           create: lineItems.map(({ product, qty }) => ({

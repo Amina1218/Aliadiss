@@ -5,6 +5,9 @@ import { getSession } from "@/lib/auth";
 export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== "STORE_OWNER") {
+    return NextResponse.json({ error: "Seller access only" }, { status: 403 });
+  }
 
   const store = await prisma.store.findUnique({
     where: { ownerId: session.sub },
@@ -20,6 +23,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== "STORE_OWNER") {
+    return NextResponse.json({ error: "Seller access only" }, { status: 403 });
+  }
 
   const body = await req.json();
   const { name, description, legalName, city, credentialsNote, legalCredentials } = body;

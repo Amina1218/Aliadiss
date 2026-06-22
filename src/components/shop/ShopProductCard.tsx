@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
 import { ShieldCheck } from 'lucide-react'
-import { formatBirr, WARRANTY_LABELS, CATEGORY_EMOJI } from '@/lib/utils'
+import { formatBirr, WARRANTY_LABELS } from '@/lib/utils'
 import { AddToCartButton } from './AddToCartButton'
+import { ProductImage } from './ProductImage'
 
 interface ShopProductCardProps {
   product: {
@@ -12,8 +13,8 @@ interface ShopProductCardProps {
     title: string
     priceBirr: number
     category: string
-    condition: string
     warrantyType: string
+    imageUrl?: string | null
     ramGb?: string | null
     batteryMah?: string | null
     storageGb?: string | null
@@ -30,19 +31,14 @@ export function ShopProductCard({ product }: ShopProductCardProps) {
   return (
     <div className="card overflow-hidden hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 group">
       <Link href={`/shop/product/${product.id}`} className="block">
-        <div className="h-44 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-          <span className="text-5xl">{CATEGORY_EMOJI[product.category] ?? '📦'}</span>
+        <div className="h-44 relative overflow-hidden">
+          <ProductImage src={product.imageUrl} category={product.category} alt={product.title} emojiClassName="text-5xl" />
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
             <Badge variant="verified">
               <ShieldCheck className="w-3 h-3" /> Verified
             </Badge>
             <Badge variant={warrantyVariant}>{warrantyLabel}</Badge>
           </div>
-          {product.condition === 'New' && (
-            <div className="absolute top-3 right-3">
-              <Badge variant="orange">New</Badge>
-            </div>
-          )}
         </div>
       </Link>
 

@@ -3,15 +3,17 @@ import Link from 'next/link'
 import { Zap } from 'lucide-react'
 import { ShopProductCard } from '@/components/shop/ShopProductCard'
 
+import { publishedProductWhere } from '@/lib/products'
+
 async function getDeals() {
   const [featured, recent] = await Promise.all([
     prisma.product.findMany({
-      where: { status: 'VERIFIED', store: { status: 'APPROVED' }, featured: true },
+      where: { ...publishedProductWhere, featured: true },
       include: { store: { select: { id: true, name: true, city: true } } },
       orderBy: { createdAt: 'desc' },
     }),
     prisma.product.findMany({
-      where: { status: 'VERIFIED', store: { status: 'APPROVED' } },
+      where: publishedProductWhere,
       include: { store: { select: { id: true, name: true, city: true } } },
       orderBy: { priceBirr: 'asc' },
       take: 8,
