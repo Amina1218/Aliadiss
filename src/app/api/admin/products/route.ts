@@ -31,6 +31,23 @@ export async function DELETE(req: NextRequest) {
   const productId = searchParams.get('productId')
   if (!productId) return NextResponse.json({ error: 'productId is required' }, { status: 400 })
 
+  const [orderItems, sales] = await Promise.all([
+    prisma.orderItem.count({ where: { productId } }),
+    prisma.sale.count({ where: { productId } }),
+  ])
+
+  if (orderItems > 0 || sales > 0) {
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        status: 'REJECTED',
+        stock: 0,
+        rejectionReason: 'Removed from marketplace by admin',
+      },
+    })
+    return NextResponse.json({ ok: true, softDeleted: true })
+  }
+
   await prisma.product.delete({ where: { id: productId } })
   return NextResponse.json({ ok: true })
 }

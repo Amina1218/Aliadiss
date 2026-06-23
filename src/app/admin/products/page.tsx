@@ -38,7 +38,8 @@ export default function AdminProductsPage() {
     try {
       const res = await fetch(`/api/admin/products?productId=${productId}`, { method: 'DELETE' })
       if (res.ok) {
-        toast.success('Product removed')
+        const data = await res.json()
+        toast.success(data.softDeleted ? 'Product hidden (has order history)' : 'Product removed')
         fetchProducts()
       } else {
         const data = await res.json()

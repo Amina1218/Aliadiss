@@ -39,6 +39,18 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PaymentMethod {
+  TELEBIRR
+  CBE_BIRR
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 enum ProductCategory {
   PHONE
   LAPTOP
@@ -123,13 +135,33 @@ model Order {
   deliveryAddress String?
   deliveryMethod  String      @default("STANDARD")
   deliveryFee     Float       @default(0)
+  paymentMethod   PaymentMethod?
+  paymentPhone    String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   customerId      String
   customer        User        @relation(fields: [customerId], references: [id])
   items           OrderItem[]
   sales           Sale[]
+  payment         Payment?
   @@map("orders")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String        @unique
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  amountBirr      Float
+  transactionId   String?
+  providerRef     String?
+  phone           String
+  failureReason   String?
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  @@map("payments")
 }
 
 model OrderItem {

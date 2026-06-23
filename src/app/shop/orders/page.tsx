@@ -9,6 +9,7 @@ async function getOrders(userId: string) {
   return prisma.order.findMany({
     where: { customerId: userId },
     include: {
+      payment: true,
       items: {
         include: {
           product: { select: { title: true } },
@@ -65,7 +66,10 @@ export default async function OrdersPage() {
                     {order.items.map((i) => i.product.title).join(', ')}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 sm:text-right">
+                <div className="flex items-center gap-3 sm:text-right flex-wrap">
+                  {order.payment?.status === 'PENDING' && order.status === 'PENDING' && (
+                    <Badge variant="pending">Awaiting payment</Badge>
+                  )}
                   <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
                   <p className="text-sm text-gray-400">{formatDate(order.createdAt)}</p>
                 </div>

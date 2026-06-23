@@ -23,7 +23,12 @@ export async function middleware(request: NextRequest) {
 
   const token = request.cookies.get('aliadiss_token')?.value
 
-  if (PUBLIC_PATHS.some(p => pathname === p) || pathname.startsWith('/api/auth') || pathname.startsWith('/uploads')) {
+  if (
+    PUBLIC_PATHS.some(p => pathname === p) ||
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/payments/webhook') ||
+    pathname.startsWith('/uploads')
+  ) {
     return NextResponse.next()
   }
 

@@ -16,6 +16,7 @@ export async function GET() {
   const orders = await prisma.order.findMany({
     where: { customerId: session.sub },
     include: {
+      payment: true,
       items: {
         include: {
           product: {
@@ -47,10 +48,21 @@ export async function POST(req: NextRequest) {
     deliveryCity,
     deliveryAddress,
     deliveryMethod = 'STANDARD',
+    paymentMethod,
+    paymentPhone,
   } = body
 
   if (!deliveryName?.trim() || !deliveryPhone?.trim() || !deliveryCity?.trim() || !deliveryAddress?.trim()) {
     return NextResponse.json({ error: 'Complete delivery address is required' }, { status: 400 })
+  }
+
+  if (!paymentMethod || !['TELEBIRR', 'CBE_BIRR'].includes(paymentMethod)) {
+    return NextResponse.json({ error: 'Select Telebirr or CBE Birr to pay' }, { status: 400 })
+  }
+
+  const payPhone = (paymentPhone || deliveryPhone).trim()
+  if (!payPhone) {
+    return NextResponse.json({ error: 'Payment phone number is required' }, { status: 400 })
   }
 
   const deliveryFee = deliveryMethod === 'EXPRESS' ? 150 : 0
@@ -94,7 +106,9 @@ export async function POST(req: NextRequest) {
         deliveryAddress: deliveryAddress.trim(),
         deliveryMethod,
         deliveryFee,
-        status: 'CONFIRMED',
+        paymentMethod,
+        paymentPhone: payPhone,
+        status: 'PENDING',
         items: {
           create: lineItems.map(({ product, qty }) => ({
             productId: product.id,
@@ -102,8 +116,17 @@ export async function POST(req: NextRequest) {
             unitPrice: product.priceBirr,
           })),
         },
+        payment: {
+          create: {
+            method: paymentMethod,
+            amountBirr: totalBirr,
+            phone: payPhone,
+            status: 'PENDING',
+          },
+        },
       },
       include: {
+        payment: true,
         items: {
           include: {
             product: { select: { id: true, title: true, category: true } },
@@ -111,28 +134,6 @@ export async function POST(req: NextRequest) {
         },
       },
     })
-
-    for (const { product, qty } of lineItems) {
-      await tx.product.update({
-        where: { id: product.id },
-        data: { stock: { decrement: qty } },
-      })
-
-      const amountBirr = product.priceBirr * qty
-      const commissionRate = product.store.commissionRate
-      const commissionBirr = Math.round(amountBirr * commissionRate * 100) / 100
-
-      await tx.sale.create({
-        data: {
-          orderId: created.id,
-          storeId: product.storeId,
-          productId: product.id,
-          amountBirr,
-          commissionRate,
-          commissionBirr,
-        },
-      })
-    }
 
     return created
   })

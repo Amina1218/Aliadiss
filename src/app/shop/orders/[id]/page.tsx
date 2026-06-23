@@ -3,9 +3,10 @@ import { getSession } from '@/lib/auth'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
-import { ArrowLeft, Truck, MapPin, Phone, User, CheckCircle, Package, Clock } from 'lucide-react'
+import { ArrowLeft, Truck, MapPin, Phone, User, CheckCircle, Package, Clock, CreditCard } from 'lucide-react'
 import { formatBirr, formatDate } from '@/lib/utils'
 import { ProductImage } from '@/components/shop/ProductImage'
+import { PayNowButton } from '@/components/shop/PayNowButton'
 
 interface PageProps {
   params: { id: string }
@@ -15,6 +16,7 @@ async function getOrder(id: string, userId: string) {
   return prisma.order.findFirst({
     where: { id, customerId: userId },
     include: {
+      payment: true,
       items: {
         include: {
           product: {
@@ -48,6 +50,18 @@ function stepIndex(status: string) {
   return -1
 }
 
+function paymentLabel(method: string | null | undefined) {
+  if (method === 'TELEBIRR') return 'Telebirr'
+  if (method === 'CBE_BIRR') return 'CBE Birr'
+  return '—'
+}
+
+function paymentStatusVariant(status: string) {
+  if (status === 'COMPLETED') return 'verified'
+  if (status === 'FAILED' || status === 'CANCELLED') return 'rejected'
+  return 'pending'
+}
+
 export default async function OrderDetailPage({ params }: PageProps) {
   const session = await getSession()
   if (!session) redirect('/login')
@@ -57,6 +71,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
   const currentStep = stepIndex(order.status)
   const cancelled = order.status === 'CANCELLED'
+  const awaitingPayment = order.payment?.status === 'PENDING' && order.status === 'PENDING'
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -76,7 +91,38 @@ export default async function OrderDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {!cancelled && (
+      {awaitingPayment && (
+        <div className="card p-5 border-orange-200 bg-orange-50/50">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold text-gray-900 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-orange-500" />
+                Payment required
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
+                Pay {formatBirr(order.totalBirr)} via {paymentLabel(order.paymentMethod)} to confirm this order.
+              </p>
+            </div>
+            <PayNowButton orderId={order.id} className="btn-primary whitespace-nowrap" />
+          </div>
+        </div>
+      )}
+
+      {order.payment && (
+        <div className="card p-5">
+          <h2 className="font-display text-sm font-bold text-gray-900 mb-3">Payment</h2>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <Badge variant={paymentStatusVariant(order.payment.status)}>{order.payment.status}</Badge>
+            <span className="text-gray-600">{paymentLabel(order.paymentMethod || order.payment.method)}</span>
+            {order.payment.phone && <span className="text-gray-400">· {order.payment.phone}</span>}
+            {order.payment.transactionId && (
+              <span className="text-gray-400 text-xs">Ref: {order.payment.transactionId}</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!cancelled && !awaitingPayment && (
         <div className="card p-6">
           <h2 className="font-display text-sm font-bold text-gray-900 mb-5 flex items-center gap-2">
             <Truck className="w-4 h-4 text-orange-500" /> Delivery tracking
